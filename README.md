@@ -15,8 +15,8 @@ API. This app is a thin, honest renderer of that API's response.
    distinguished by colour alone.
 2. A locked specification is never worked around client-side. If the backend
    says it's locked, no value is shown, full stop.
-3. Media is described, never diagnosed, and an upload requires explicit,
-   per-item consent before anything is sent to a model.
+3. Media is described, never diagnosed. The MVP keeps the file on the device
+   and sends only filename, type, size, and the user's written observation.
 4. Reduced motion is a first-class mode: every cinematic transition collapses
    to an instant state change, and the current viewpoint is always stated in
    text as well as shown visually.
@@ -29,15 +29,17 @@ This app needs `cruiser-copilot-backend` running (default `http://localhost:4000
 
 ```bash
 # in a sibling checkout of cruiser-copilot-backend
-npm install && npm run dev
+npm ci && npm run dev
 
 # in this repo
-npm install
+npm ci
 cp .env.example .env.local   # points at the backend's default port
 npm run dev                   # http://127.0.0.1:3000
 ```
 
-No credentials are required in scripted mode (the backend's default).
+No account credentials are required in scripted mode. The backend returns an
+opaque per-session access token once; the API client keeps it in local storage
+and automatically sends it as a bearer token. It never appears in the URL.
 
 ## Scripts
 
@@ -66,19 +68,20 @@ src/
     evidence/              photo/video/measurement capture
     repair/                guided checklist + outcome recorder
   hooks/useReducedMotion.ts
-  lib/client/api.ts        thin fetch wrapper around the backend API
+  lib/client/api.ts        authenticated fetch wrapper + contract-version guard
   types/index.ts           hand-written mirror of the backend's wire contract
 tests/e2e/journey.spec.ts  full MVP journey, reduced-motion, no-confirmation
 ```
 
 ## Why `types/index.ts` isn't generated from zod
 
-The backend owns validation (it parses every request/response through zod).
-This frontend never validates — it only renders what the backend already
-validated — so it doesn't carry a zod dependency. `src/types/index.ts` is a
-hand-written TypeScript mirror of the backend's schemas. If the backend's
-contract changes, update this file to match — see the backend's
-`docs/DATA_MODEL.md`.
+The backend owns validation (it parses every request through zod). This
+frontend does not duplicate those schemas, so it does not carry a zod
+dependency. `src/types/index.ts` is a hand-written TypeScript mirror of the
+backend's wire shapes. Session and procedure responses also carry a dated
+contract version; the client stops with `api_contract_mismatch` instead of
+rendering a response from an incompatible backend. When that version changes,
+update the mirror and both contract constants together.
 
 ## Safety
 

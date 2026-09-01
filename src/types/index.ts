@@ -10,8 +10,8 @@
  * If the backend contract changes, update this file to match.
  */
 
-export type Series = string;
-export type EngineCode = string;
+export type Series = "70" | "80" | "unknown";
+export type EngineCode = "1HZ" | "1HD-T" | "unknown";
 export type AcsdConfiguration = "present" | "absent" | "unknown";
 export type IdentificationConfidence = "user-confirmed" | "inferred" | "unknown";
 

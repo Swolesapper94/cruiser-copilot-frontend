@@ -31,7 +31,7 @@ async function identifyVehicle(page: Page) {
 
   // Deliberately skip every optional applicability field so the specification
   // stays locked and the conflict is exercised.
-  for (const _ of ["modelCode", "productionYear", "market", "pumpModel"]) {
+  for (let index = 0; index < 4; index += 1) {
     await page
       .getByRole("button", { name: "I don't know — keep it unresolved" })
       .click();
@@ -101,7 +101,7 @@ test.describe("Cruiser Copilot MVP journey", () => {
     await evidence
       .getByLabel("Describe what you observed")
       .fill("Dial indicator on the plunger, engine cold.");
-    await evidence.getByRole("button", { name: "Save evidence" }).click();
+    await evidence.getByRole("button", { name: "Save evidence note" }).click();
 
     await expect(page.getByText(/0\.9 mm/).first()).toBeVisible();
     await expect(

@@ -26,7 +26,6 @@ export function EvidenceUploader({
   const [engineTemperature, setEngineTemperature] = useState("unknown");
   const [relationToRepair, setRelationToRepair] = useState("unknown");
   const [file, setFile] = useState<File | null>(null);
-  const [allowModelAnalysis, setAllowModelAnalysis] = useState(false);
   const [measurementKey, setMeasurementKey] = useState(MEASUREMENT_KEYS[0].value);
   const [measurementValue, setMeasurementValue] = useState("");
 
@@ -68,19 +67,19 @@ export function EvidenceUploader({
       fileName: file?.name,
       mimeType: file?.type,
       sizeBytes: file?.size,
-      allowModelAnalysis,
+      allowModelAnalysis: false,
     });
     setFile(null);
     setDescription("");
-    setAllowModelAnalysis(false);
   }
 
   return (
     <section className="panel p-5" aria-label="Add evidence">
       <h2 className="text-base font-semibold">Add evidence</h2>
       <p className="mt-1 text-xs text-shop-muted">
-        Media is described, never diagnosed. A photo cannot establish an internal
-        mechanical cause, and no measurement is inferred from an image.
+        Files stay on this device. Cruiser Copilot records only the filename,
+        type, size, and your written observation; it does not upload or analyze
+        the selected file.
       </p>
 
       <div className="mt-4 flex gap-2" role="tablist" aria-label="Evidence type">
@@ -202,23 +201,8 @@ export function EvidenceUploader({
           </div>
         </div>
 
-        {mode === "media" ? (
-          <label className="flex items-start gap-2 text-xs text-shop-muted">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              checked={allowModelAnalysis}
-              onChange={(event) => setAllowModelAnalysis(event.target.checked)}
-            />
-            <span>
-              Allow this file to be described by an AI model. Leave unchecked to
-              keep it on your device. Nothing is sent unless you tick this.
-            </span>
-          </label>
-        ) : null}
-
         <button className="btn-primary" type="submit" disabled={busy}>
-          Save evidence
+          Save evidence note
         </button>
       </form>
 

@@ -17,6 +17,7 @@ interface RepairWorkspaceProps {
 export function RepairWorkspace({ procedureId, sessionId }: RepairWorkspaceProps) {
   const [procedure, setProcedure] = useState<ProcedurePayload | null>(null);
   const [session, setSession] = useState<SessionPayload | null>(null);
+  const [optimisticStepIds, setOptimisticStepIds] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +83,7 @@ export function RepairWorkspace({ procedureId, sessionId }: RepairWorkspaceProps
   const specificationLocked =
     session?.update.specificationLocked ?? procedure.specificationLocked;
   const completedStepIds =
-    session?.session.completedStepIds ?? procedure.completedStepIds;
+    optimisticStepIds ?? session?.session.completedStepIds ?? procedure.completedStepIds;
   const gates = session?.update.safetyGates ?? procedure.safetyGates;
 
   return (
@@ -106,7 +107,24 @@ export function RepairWorkspace({ procedureId, sessionId }: RepairWorkspaceProps
         busy={busy}
         onToggle={(stepId, completed) => {
           if (!sessionId) return;
-          void run(() => api.setStep(sessionId, stepId, completed));
+          const previousStepIds = completedStepIds;
+          const nextStepIds = completed
+            ? [...new Set([...previousStepIds, stepId])]
+            : previousStepIds.filter((id) => id !== stepId);
+
+          setOptimisticStepIds(nextStepIds);
+          setBusy(true);
+          setError(null);
+          void api
+            .setStep(sessionId, stepId, completed)
+            .then((result) => setSession(result))
+            .catch(() => {
+              setError("That request did not go through. Nothing was changed.");
+            })
+            .finally(() => {
+              setOptimisticStepIds(null);
+              setBusy(false);
+            });
         }}
       />
 
