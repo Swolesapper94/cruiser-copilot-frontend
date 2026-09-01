@@ -22,7 +22,10 @@ export default defineConfig({
     },
     {
       name: "reduced-motion",
-      use: { ...devices["Desktop Chrome"], reducedMotion: "reduce" },
+      use: {
+        ...devices["Desktop Chrome"],
+        contextOptions: { reducedMotion: "reduce" },
+      },
     },
   ],
   webServer: {

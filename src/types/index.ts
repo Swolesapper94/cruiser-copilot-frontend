@@ -10,21 +10,27 @@
  * If the backend contract changes, update this file to match.
  */
 
-export type Series = "70" | "80" | "unknown";
-export type EngineCode = "1HZ" | "1HD-T" | "unknown";
+export type Series = string;
+export type EngineCode = string;
 export type AcsdConfiguration = "present" | "absent" | "unknown";
 export type IdentificationConfidence = "user-confirmed" | "inferred" | "unknown";
 
 export interface Vehicle {
   id: string;
+  manufacturer?: string;
+  modelName?: string;
+  submodel?: string;
+  vin?: string;
   series: Series;
   modelCode?: string;
   chassisCode?: string;
   productionYear?: number;
+  productionDate?: string;
   market?: string;
   engineCode: EngineCode;
   transmission?: string;
   pumpModel?: string;
+  emissionsConfiguration?: string;
   acsdConfiguration?: AcsdConfiguration;
   modifications: string[];
   identificationConfidence: IdentificationConfidence;
@@ -32,12 +38,17 @@ export interface Vehicle {
 
 /** Fields that must be known before an exact specification may be selected. */
 export const APPLICABILITY_FIELDS = [
+  "manufacturer",
+  "modelName",
+  "submodel",
   "series",
   "modelCode",
   "productionYear",
+  "productionDate",
   "market",
   "engineCode",
   "pumpModel",
+  "emissionsConfiguration",
   "acsdConfiguration",
 ] as const;
 
@@ -75,12 +86,17 @@ export interface SourcePassage {
   pageNumber?: number;
   section?: string;
   postNumber?: string;
+  manufacturers: string[];
+  modelNames: string[];
+  submodels: string[];
   modelCodes: string[];
   engineCodes: string[];
   markets: string[];
   yearStart?: number;
   yearEnd?: number;
   pumpModels: string[];
+  acsdStates: AcsdConfiguration[];
+  emissionsConfigurations: string[];
   diagramRef?: string;
   keywords: string[];
   specificationSubject?: string;

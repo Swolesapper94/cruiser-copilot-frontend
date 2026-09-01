@@ -1,6 +1,7 @@
 "use client";
 
-import anime from "animejs";
+import { animate, createScope, spring } from "animejs";
+import { Crosshair, ScanSearch } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { VisualFocus } from "@/types";
@@ -9,90 +10,112 @@ import { VehicleArt } from "./VehicleArt";
 interface VehicleStageProps {
   focus: VisualFocus;
   caption?: string;
+  targetLabel?: string;
 }
 
 const FOCUS_LABEL: Record<VisualFocus, string> = {
-  "front-three-quarter": "Front three-quarter",
-  "driver-side": "Driver side",
-  "rear-three-quarter": "Rear three-quarter",
-  "rear-exhaust": "Rear / exhaust",
+  "front-three-quarter": "Vehicle family",
+  "driver-side": "Identification plate",
+  "rear-three-quarter": "Market configuration",
+  "rear-exhaust": "Exhaust system",
   "engine-bay": "Engine bay",
-  dashboard: "Dashboard",
-  "pump-detail": "Injection pump area",
+  dashboard: "Observed behavior",
+  "pump-detail": "Fuel injection pump",
 };
 
 const CAMERA: Record<
   VisualFocus,
-  { rotate: number; scale: number; x: number; y: number }
+  { x: number; y: number; scale: number; rotate: number }
 > = {
-  "front-three-quarter": { rotate: -6, scale: 1, x: 18, y: 0 },
-  "driver-side": { rotate: 0, scale: 1.02, x: 0, y: 0 },
-  "rear-three-quarter": { rotate: 6, scale: 1, x: -18, y: 0 },
-  "rear-exhaust": { rotate: 4, scale: 1.35, x: -70, y: -18 },
-  "engine-bay": { rotate: -3, scale: 1.5, x: 55, y: 10 },
-  dashboard: { rotate: 0, scale: 1.45, x: 0, y: 6 },
-  "pump-detail": { rotate: -2, scale: 1.9, x: 60, y: 14 },
+  "front-three-quarter": { x: 0, y: 4, scale: 0.96, rotate: -0.5 },
+  "driver-side": { x: 0, y: 0, scale: 1.04, rotate: 0 },
+  "rear-three-quarter": { x: -16, y: 2, scale: 1.02, rotate: 0.6 },
+  "rear-exhaust": { x: -96, y: -2, scale: 1.27, rotate: 0 },
+  "engine-bay": { x: 82, y: 28, scale: 1.3, rotate: -0.5 },
+  dashboard: { x: 6, y: 34, scale: 1.28, rotate: 0 },
+  "pump-detail": { x: 112, y: 20, scale: 1.48, rotate: -0.5 },
 };
 
-/**
- * Cinematic camera move between viewpoints.
- *
- * Motion is decoration only. The viewpoint is always stated in text as well, so
- * the stage is equally usable with reduced motion or with animation disabled.
- */
-export function VehicleStage({ focus, caption }: VehicleStageProps) {
-  const artRef = useRef<HTMLDivElement>(null);
+export function VehicleStage({ focus, caption, targetLabel }: VehicleStageProps) {
+  const rootRef = useRef<HTMLElement>(null);
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    const node = artRef.current;
-    if (!node) return;
-
+    const root = rootRef.current;
+    if (!root) return;
     const camera = CAMERA[focus];
 
     if (reducedMotion) {
-      node.style.transform = `translate(${camera.x}px, ${camera.y}px) rotate(${camera.rotate}deg) scale(${camera.scale})`;
-      node.style.opacity = "1";
+      const art = root.querySelector<HTMLElement>(".vehicle-camera");
+      if (art) {
+        art.style.transform = `translate(${camera.x}px, ${camera.y}px) rotate(${camera.rotate}deg) scale(${camera.scale})`;
+      }
       return;
     }
 
-    const animation = anime({
-      targets: node,
-      translateX: camera.x,
-      translateY: camera.y,
-      rotate: camera.rotate,
-      scale: camera.scale,
-      opacity: [0.72, 1],
-      easing: "cubicBezier(0.22, 1, 0.36, 1)",
-      duration: 900,
+    const scope = createScope({ root }).add(() => {
+      animate(".vehicle-camera", {
+        x: camera.x,
+        y: camera.y,
+        scale: camera.scale,
+        rotate: camera.rotate,
+        duration: 900,
+        ease: "out(4)",
+      });
+      animate(".vehicle-target", {
+        opacity: [0, 1],
+        scale: [0.82, 1],
+        duration: 650,
+        delay: 180,
+        ease: spring({ bounce: 0.35 }),
+      });
+      animate(".target-ring", {
+        rotate: [0, 180],
+        duration: 4400,
+        loop: true,
+        ease: "linear",
+      });
+      animate(".vehicle-wheel", {
+        y: [0, -1.5, 0],
+        duration: 1100,
+        delay: (_, index) => (index ?? 0) * 80,
+        ease: "inOut(2)",
+      });
     });
 
-    return () => {
-      animation.pause();
-    };
+    return () => scope.revert();
   }, [focus, reducedMotion]);
 
   return (
-    <section
-      className="panel relative overflow-hidden"
-      aria-label="Vehicle viewpoint"
-    >
-      <div className="pointer-events-none absolute inset-0 opacity-40 [background:repeating-linear-gradient(180deg,rgba(90,210,230,0.05)_0px,rgba(90,210,230,0.05)_1px,transparent_1px,transparent_4px)]" />
+    <section ref={rootRef} className="vehicle-stage" aria-label="Vehicle system locator">
+      <div className="stage-topline">
+        <div>
+          <p className="label-caps">Live vehicle map</p>
+          <p className="mt-1 text-sm font-medium text-shop-text">{FOCUS_LABEL[focus]}</p>
+        </div>
+        <span className="target-badge">
+          <Crosshair className="h-3.5 w-3.5" aria-hidden />
+          {targetLabel ?? FOCUS_LABEL[focus]}
+        </span>
+      </div>
 
-      <div className="relative flex h-[260px] items-center justify-center sm:h-[320px]">
-        <div ref={artRef} className="w-[min(560px,92%)] will-change-transform">
+      <div className="stage-grid" aria-hidden />
+      <div className="stage-scan" aria-hidden />
+
+      <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden sm:min-h-[410px] lg:min-h-[520px]">
+        <div className="vehicle-camera w-[min(760px,116%)] origin-center will-change-transform">
           <VehicleArt focus={focus} className="h-auto w-full" />
         </div>
       </div>
 
-      <div className="relative flex flex-wrap items-center justify-between gap-2 border-t border-shop-line px-4 py-3">
-        <p className="label-caps">View: {FOCUS_LABEL[focus]}</p>
-        {caption ? (
-          <p className="text-xs text-shop-muted">{caption}</p>
-        ) : null}
-        {reducedMotion ? (
-          <p className="text-[11px] text-shop-muted">Reduced motion active</p>
-        ) : null}
+      <div className="stage-footer">
+        <div className="flex min-w-0 items-center gap-2">
+          <ScanSearch className="h-4 w-4 shrink-0 text-practical" aria-hidden />
+          <p className="truncate text-xs text-shop-muted">{caption ?? "Waiting for vehicle details"}</p>
+        </div>
+        <span className="font-mono text-[10px] uppercase tracking-[.14em] text-shop-muted">
+          {reducedMotion ? "Motion off" : "Focus tracking"}
+        </span>
       </div>
     </section>
   );

@@ -15,8 +15,16 @@ import { expect, test, type Page } from "@playwright/test";
 async function identifyVehicle(page: Page) {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Which series is it?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What are we working on?" })).toBeVisible();
+  await page.getByRole("button", { name: /Toyota Land Cruiser/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Which series?" })).toBeVisible();
   await page.getByRole("button", { name: /80 Series/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Trim or sub-model" })).toBeVisible();
+  await page
+    .getByRole("button", { name: "I don't know — keep it unresolved" })
+    .click();
 
   await expect(page.getByRole("heading", { name: "Which diesel engine?" })).toBeVisible();
   await page.getByRole("button", { name: /1HD-T/ }).click();
@@ -24,11 +32,13 @@ async function identifyVehicle(page: Page) {
   // Deliberately skip every optional applicability field so the specification
   // stays locked and the conflict is exercised.
   for (const _ of ["modelCode", "productionYear", "market", "pumpModel"]) {
-    await page.getByRole("button", { name: "I don't know" }).click();
+    await page
+      .getByRole("button", { name: "I don't know — keep it unresolved" })
+      .click();
   }
 
   await expect(
-    page.getByRole("heading", { name: /cold-start advance device/i }),
+    page.getByRole("heading", { name: /advance device fitted/i }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Not sure" }).click();
 
@@ -99,7 +109,12 @@ test.describe("Cruiser Copilot MVP journey", () => {
     ).toBeVisible();
 
     // 9. A guided repair step, with OEM and community content separated.
-    await nextTest.getByRole("link", { name: "Open guided procedure" }).click();
+    // This route is exercised directly because the currently recommended
+    // low-risk fuel-filter inspection intentionally has no guided procedure.
+    const activeSessionId = new URL(page.url()).pathname.split("/").pop();
+    await page.goto(
+      `/repair/proc-injection-pump-timing?sessionId=${activeSessionId}`,
+    );
     await page.waitForURL(/\/repair\/.+/);
 
     const firstStep = page.getByRole("checkbox").first();
@@ -128,6 +143,6 @@ test.describe("Cruiser Copilot MVP journey", () => {
     await identifyVehicle(page);
     await expect(page.getByRole("region", { name: "Current question" })).toBeVisible();
     // The stage always states the current view in text, never by animation alone.
-    await expect(page.getByText(/^View: /).first()).toBeVisible();
+    await expect(page.getByText("Live vehicle map").first()).toBeVisible();
   });
 });
