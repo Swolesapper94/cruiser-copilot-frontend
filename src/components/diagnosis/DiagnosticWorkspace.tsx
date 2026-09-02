@@ -96,7 +96,31 @@ export function DiagnosticWorkspace({ sessionId }: { sessionId: string }) {
               </p>
             </section>
           )}
+        </div>
 
+        <div className="space-y-6">
+          {update.recommendedTest ? (
+            <RecommendedTestCard
+              test={update.recommendedTest}
+              sessionId={sessionId}
+              blocked={update.specificationLocked}
+            />
+          ) : (
+            <section className="panel p-5">
+              <p className="label-caps">Next best test</p>
+              <p className="mt-2 text-sm text-shop-muted">
+                Not enough is known yet to recommend a test that would be worth
+                your time. Answer a few more questions first.
+              </p>
+            </section>
+          )}
+
+          <HypothesisList hypotheses={update.hypotheses} />
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[.95fr_1.05fr] lg:items-start">
+        <div className="space-y-6">
           <section className="panel p-5" aria-label="Summary">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h2 className="text-base font-semibold">Where this stands</h2>
@@ -131,24 +155,6 @@ export function DiagnosticWorkspace({ sessionId }: { sessionId: string }) {
         </div>
 
         <div className="space-y-6">
-          <HypothesisList hypotheses={update.hypotheses} />
-
-          {update.recommendedTest ? (
-            <RecommendedTestCard
-              test={update.recommendedTest}
-              sessionId={sessionId}
-              blocked={update.specificationLocked}
-            />
-          ) : (
-            <section className="panel p-5">
-              <p className="label-caps">Next best test</p>
-              <p className="mt-2 text-sm text-shop-muted">
-                Not enough is known yet to recommend a test that would be worth
-                your time. Answer a few more questions first.
-              </p>
-            </section>
-          )}
-
           <MissingDetailsForm
             vehicle={session.vehicle}
             missingFields={update.vehicleStatus.missingFields}
@@ -162,10 +168,10 @@ export function DiagnosticWorkspace({ sessionId }: { sessionId: string }) {
             conflicts={update.sourceConflicts}
             citations={update.citations}
           />
-
-          <CitationList citations={update.citations} />
         </div>
       </div>
+
+      <CitationList citations={update.citations} />
 
       {error ? (
         <p role="alert" className="text-sm text-danger">

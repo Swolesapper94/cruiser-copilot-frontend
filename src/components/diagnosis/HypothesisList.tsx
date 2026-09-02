@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Circle, HelpCircle, Minus, X } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, Circle, HelpCircle, Minus, X } from "lucide-react";
 import type { Hypothesis } from "@/types";
 
 const STATUS_META = {
@@ -22,7 +23,12 @@ const DIRECTION_META = {
 } as const;
 
 export function HypothesisList({ hypotheses }: { hypotheses: Hypothesis[] }) {
+  const [showAll, setShowAll] = useState(false);
+
   if (hypotheses.length === 0) return null;
+
+  const visibleHypotheses = showAll ? hypotheses : hypotheses.slice(0, 3);
+  const hiddenCount = Math.max(hypotheses.length - visibleHypotheses.length, 0);
 
   return (
     <section className="panel p-5" aria-label="Ranked possibilities">
@@ -36,7 +42,7 @@ export function HypothesisList({ hypotheses }: { hypotheses: Hypothesis[] }) {
       </p>
 
       <ol className="space-y-3">
-        {hypotheses.map((hypothesis, index) => {
+        {visibleHypotheses.map((hypothesis, index) => {
           const meta = STATUS_META[hypothesis.status];
           const StatusIcon = meta.Icon;
           const percent = Math.round(hypothesis.relativeScore * 100);
@@ -82,46 +88,72 @@ export function HypothesisList({ hypotheses }: { hypotheses: Hypothesis[] }) {
                 </p>
               </div>
 
-              {hypothesis.rationale.length > 0 ? (
-                <ul className="mt-3 space-y-1.5">
-                  {hypothesis.rationale.map((link) => {
-                    const direction = DIRECTION_META[link.direction];
-                    return (
-                      <li key={`${hypothesis.id}-${link.ref}`} className="text-xs">
-                        <span
-                          className={`mr-2 font-semibold uppercase tracking-[0.1em] ${direction.className}`}
-                        >
-                          {direction.label}
-                        </span>
-                        <span className="text-shop-muted">{link.note}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
+              {hypothesis.rationale.length > 0 ||
+              hypothesis.missingEvidence.length > 0 ? (
+                <details className="group mt-3 border-t border-shop-line pt-3">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-medium text-shop-text marker:hidden">
+                    Why it is ranked here
+                    <ChevronDown
+                      className="h-4 w-4 text-shop-muted transition-transform group-open:rotate-180"
+                      aria-hidden
+                    />
+                  </summary>
 
-              {hypothesis.missingEvidence.length > 0 ? (
-                <div className="mt-3 flex gap-2 rounded-lg border border-shop-line bg-shop-deep p-3">
-                  <HelpCircle
-                    className="mt-0.5 h-4 w-4 shrink-0 text-shop-muted"
-                    aria-hidden
-                  />
-                  <div className="text-xs">
-                    <p className="mb-0.5 font-medium text-shop-text">
-                      Still missing
-                    </p>
-                    <ul className="list-disc space-y-0.5 pl-4 text-shop-muted">
-                      {hypothesis.missingEvidence.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
+                  {hypothesis.rationale.length > 0 ? (
+                    <ul className="mt-3 space-y-1.5">
+                      {hypothesis.rationale.map((link) => {
+                        const direction = DIRECTION_META[link.direction];
+                        return (
+                          <li key={`${hypothesis.id}-${link.ref}`} className="text-xs">
+                            <span
+                              className={`mr-2 font-semibold uppercase tracking-[0.1em] ${direction.className}`}
+                            >
+                              {direction.label}
+                            </span>
+                            <span className="text-shop-muted">{link.note}</span>
+                          </li>
+                        );
+                      })}
                     </ul>
-                  </div>
-                </div>
+                  ) : null}
+
+                  {hypothesis.missingEvidence.length > 0 ? (
+                    <div className="mt-3 flex gap-2 rounded-lg border border-shop-line bg-shop-deep p-3">
+                      <HelpCircle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-shop-muted"
+                        aria-hidden
+                      />
+                      <div className="text-xs">
+                        <p className="mb-0.5 font-medium text-shop-text">
+                          Still missing
+                        </p>
+                        <ul className="list-disc space-y-0.5 pl-4 text-shop-muted">
+                          {hypothesis.missingEvidence.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : null}
+                </details>
               ) : null}
             </li>
           );
         })}
       </ol>
+
+      {hypotheses.length > 3 ? (
+        <button
+          type="button"
+          className="btn-secondary mt-4 w-full justify-center"
+          onClick={() => setShowAll((current) => !current)}
+          aria-expanded={showAll}
+        >
+          {showAll
+            ? "Show fewer possibilities"
+            : `Show ${hiddenCount} more ${hiddenCount === 1 ? "possibility" : "possibilities"}`}
+        </button>
+      ) : null}
     </section>
   );
 }
